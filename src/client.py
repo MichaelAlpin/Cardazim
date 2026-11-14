@@ -14,7 +14,6 @@ def send_data(server_ip: str, server_port: int, data: str) -> None:
     """
     client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_sock.connect((server_ip, server_port))
-    print("Sending message...")
     encoded_data = data.encode("utf-8")
     client_sock.sendall(struct.pack(f"<i{len(encoded_data)}s", len(encoded_data), encoded_data))
     client_sock.close()
@@ -37,6 +36,7 @@ def main():
     """
     args = get_args()
     try:
+        print("Sending message...")
         send_data(args.server_ip, args.server_port, args.data)
         print("Done.")
     except OSError as error:

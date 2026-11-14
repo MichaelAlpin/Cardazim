@@ -47,6 +47,8 @@ def run_server(ip: str, port: int) -> None:
         # Print the message received
         print(f"Received data: {msg_data}")
 
+        conn.close()
+
 
 def get_args() -> argparse.Namespace:
     """
