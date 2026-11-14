@@ -6,6 +6,47 @@ import argparse
 import socket
 import struct
 import sys
+import threading
+
+
+def handle_connection(conn: socket.socket) -> None:
+    """
+    Receive the message from the active connection and print it
+    """
+    # Retrieve the message length
+    len_field = b''
+    while len(len_field) < 4:
+        received_payload = conn.recv(4 - len(len_field))
+
+        if len(received_payload) == 0:
+            # Close server
+            print("Failed fully reading a received message")
+            conn.close()
+            return
+
+        len_field += received_payload
+
+    message_length = struct.unpack("<i", len_field)[0]
+
+    # Retrieve the message data
+    data_field = b''
+    while len(data_field) < message_length:
+        received_payload = conn.recv(message_length - len(data_field))
+
+        if len(received_payload) == 0:
+            # Close server
+            print("Failed fully reading a received message")
+            conn.close()
+            return
+
+        data_field += received_payload
+
+    message_data = data_field.decode("utf-8")
+
+    # Print the message received
+    print(f"Received data: {message_data}")
+
+    conn.close()
 
 
 def run_server(ip: str, port: int) -> None:
@@ -19,41 +60,8 @@ def run_server(ip: str, port: int) -> None:
 
     while True:
         conn, _ = server_sock.accept()
-
-        # Retrieve the message length
-        len_field = b''
-        while len(len_field) < 4:
-            received_payload = conn.recv(4 - len(len_field))
-
-            if len(received_payload) == 0:
-                # Close server
-                print("Failed fully reading a received message")
-                conn.close()
-                continue
-
-            len_field += received_payload
-
-        message_length = struct.unpack("<i", len_field)[0]
-
-        # Retrieve the message data
-        data_field = b''
-        while len(data_field) < message_length:
-            received_payload = conn.recv(message_length - len(data_field))
-
-            if len(received_payload) == 0:
-                # Close server
-                print("Failed fully reading a received message")
-                conn.close()
-                continue
-
-            data_field += received_payload
-
-        message_data = data_field.decode("utf-8")
-
-        # Print the message received
-        print(f"Received data: {message_data}")
-
-        conn.close()
+        t = threading.Thread(target=handle_connection, args=(conn, ))
+        t.start()
 
 
 def get_args() -> argparse.Namespace:
