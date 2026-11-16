@@ -6,6 +6,41 @@ import argparse
 import socket
 import struct
 import sys
+import threading
+
+
+def handle_connection(conn: socket.socket) -> None:
+    """
+    Receive the message from the active connection and print it
+    """
+    # Retrieve the message length
+    msg_len = bytes([])
+    while len(msg_len) < 4:
+        received_payload = conn.recv(4 - len(msg_len))
+
+        if len(received_payload) == 0:
+            print("Failed fully reading a received message")
+            return
+
+        msg_len += received_payload
+    msg_len = struct.unpack("<i", msg_len)[0]
+
+    # Retrieve the message data
+    msg_data = bytes([])
+    while len(msg_data) < msg_len:
+        received_payload = conn.recv(msg_len - len(msg_data))
+
+        if len(received_payload) == 0:
+            print("Failed fully reading a received message")
+            return
+
+        msg_data += received_payload
+    msg_data = struct.unpack(f"{msg_len}s", msg_data)[0].decode("utf-8")
+
+    # Print the message received
+    print(f"Received data: {msg_data}")
+
+    conn.close()
 
 
 def run_server(ip: str, port: int) -> None:
@@ -19,33 +54,8 @@ def run_server(ip: str, port: int) -> None:
 
     while True:
         conn, _ = server_sock.accept()
-
-        # Retrieve the message length
-        msg_len = bytes([])
-        while len(msg_len) < 4:
-            received_payload = conn.recv(4 - len(msg_len))
-
-            if len(received_payload) == 0:
-                print("Failed fully reading a received message")
-                return
-
-            msg_len += received_payload
-        msg_len = struct.unpack("<i", msg_len)[0]
-
-        # Retrieve the message data
-        msg_data = bytes([])
-        while len(msg_data) < msg_len:
-            received_payload = conn.recv(msg_len - len(msg_data))
-
-            if len(received_payload) == 0:
-                print("Failed fully reading a received message")
-                return
-
-            msg_data += received_payload
-        msg_data = struct.unpack(f"{msg_len}s", msg_data)[0].decode("utf-8")
-
-        # Print the message received
-        print(f"Received data: {msg_data}")
+        t = threading.Thread(target=handle_connection, args=(conn, ))
+        t.start()
 
         conn.close()
 
