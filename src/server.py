@@ -29,8 +29,7 @@ def run_server(ip: str, port: int) -> None:
                 # Close server
                 print("Failed fully reading a received message")
                 conn.close()
-                server_sock.close()
-                return
+                continue
 
             len_field += received_payload
 
@@ -45,8 +44,7 @@ def run_server(ip: str, port: int) -> None:
                 # Close server
                 print("Failed fully reading a received message")
                 conn.close()
-                server_sock.close()
-                return
+                continue
 
             data_field += received_payload
 
