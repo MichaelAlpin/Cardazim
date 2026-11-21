@@ -21,31 +21,39 @@ def run_server(ip: str, port: int) -> None:
         conn, _ = server_sock.accept()
 
         # Retrieve the message length
-        msg_len = bytes([])
-        while len(msg_len) < 4:
-            received_payload = conn.recv(4 - len(msg_len))
+        len_field = b''
+        while len(len_field) < 4:
+            received_payload = conn.recv(4 - len(len_field))
 
             if len(received_payload) == 0:
+                # Close server
                 print("Failed fully reading a received message")
+                conn.close()
+                server_sock.close()
                 return
 
-            msg_len += received_payload
-        msg_len = struct.unpack("<i", msg_len)[0]
+            len_field += received_payload
+
+        message_length = struct.unpack("<i", len_field)[0]
 
         # Retrieve the message data
-        msg_data = bytes([])
-        while len(msg_data) < msg_len:
-            received_payload = conn.recv(msg_len - len(msg_data))
+        data_field = b''
+        while len(data_field) < message_length:
+            received_payload = conn.recv(message_length - len(data_field))
 
             if len(received_payload) == 0:
+                # Close server
                 print("Failed fully reading a received message")
+                conn.close()
+                server_sock.close()
                 return
 
-            msg_data += received_payload
-        msg_data = struct.unpack(f"{msg_len}s", msg_data)[0].decode("utf-8")
+            data_field += received_payload
+
+        message_data = data_field.decode("utf-8")
 
         # Print the message received
-        print(f"Received data: {msg_data}")
+        print(f"Received data: {message_data}")
 
         conn.close()
 
@@ -60,7 +68,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> int:
     """
     Implementation of CLI and starting a server.
     """

@@ -12,6 +12,10 @@ def send_data(server_ip: str, server_port: int, data: str) -> None:
     """
     Send data to server in address (server_ip, server_port).
     """
+    if len(data) > 0xffffffff:
+        # Bad argument - the given message is too big to send
+        raise ValueError("The given message is too long")
+
     client_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_sock.connect((server_ip, server_port))
     encoded_data = data.encode("utf-8")
@@ -30,7 +34,7 @@ def get_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main():
+def main() -> int:
     """
     Implementation of CLI and sending data to server.
     """
@@ -39,7 +43,7 @@ def main():
         print("Sending message...")
         send_data(args.server_ip, args.server_port, args.data)
         print("Done.")
-    except OSError as error:
+    except (OSError, ValueError) as error:
         print(f"ERROR: {error}")
         return 1
 
